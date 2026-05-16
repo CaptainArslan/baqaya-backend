@@ -7,6 +7,31 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## API Documentation (Swagger)
+
+Generate OpenAPI docs and open the interactive UI:
+
+```bash
+php artisan l5-swagger:generate
+```
+
+Then visit:
+
+[http://localhost/api/documentation](http://localhost/api/documentation)
+
+**Testing protected endpoints**
+
+1. Call `POST /api/v1/auth/otp/request` then `POST /api/v1/auth/otp/verify` (OTP is logged in `storage/logs/laravel.log` when `APP_ENV=local`).
+2. Copy `data.access_token` from the verify response.
+3. Click **Authorize** in Swagger UI and paste the token (with or without the `Bearer ` prefix).
+4. Each user owns exactly one shop — shop-scoped routes resolve it automatically from the bearer token (no `X-Shop-Uuid` header).
+
+Regenerate docs after changing annotations:
+
+```bash
+php artisan l5-swagger:generate
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

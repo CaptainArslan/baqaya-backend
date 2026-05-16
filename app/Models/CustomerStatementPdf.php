@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class CustomerStatementPdf extends Model
 {
     use HasFactory;
+    use HasPublicId;
 
     protected $fillable = [
         'uuid',
@@ -21,6 +22,8 @@ class CustomerStatementPdf extends Model
         'from_date',
         'to_date',
         'generated_at',
+        'status',
+        'requested_by',
     ];
 
     protected function casts(): array
@@ -30,15 +33,6 @@ class CustomerStatementPdf extends Model
             'to_date' => 'date',
             'generated_at' => 'datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (self $pdf): void {
-            if (empty($pdf->uuid)) {
-                $pdf->uuid = (string) Str::uuid();
-            }
-        });
     }
 
     public function shop(): BelongsTo

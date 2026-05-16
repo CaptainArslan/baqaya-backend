@@ -29,7 +29,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['shop_id', 'name']);
+            $table->unique(['shop_id', 'name']);
             $table->index(['shop_id', 'phone']);
             $table->index(['shop_id', 'server_version']);
         });

@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class Shop extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use HasPublicId;
+    use SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -26,6 +28,7 @@ class Shop extends Model
         'currency',
         'timezone',
         'terms_accepted_at',
+        'server_version',
     ];
 
     protected function casts(): array
@@ -34,15 +37,6 @@ class Shop extends Model
             'terms_accepted_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (self $shop): void {
-            if (empty($shop->uuid)) {
-                $shop->uuid = (string) Str::uuid();
-            }
-        });
     }
 
     public function user(): BelongsTo
@@ -58,5 +52,10 @@ class Shop extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 }

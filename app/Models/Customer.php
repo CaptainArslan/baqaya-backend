@@ -5,16 +5,23 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\WhatsappStatus;
+use App\Support\HasPublicId;
+use App\Support\IncrementsServerVersion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
+/**
+ * Shop-specific ledger contact (debtor/creditor). Not an app user and cannot authenticate.
+ */
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use HasPublicId;
+    use IncrementsServerVersion;
+    use SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -47,19 +54,6 @@ class Customer extends Model
         ];
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $customer): void {
-            if (empty($customer->uuid)) {
-                $customer->uuid = (string) Str::uuid();
-            }
-        });
-
-        static::updating(function (self $customer): void {
-            $customer->server_version++;
-        });
-    }
-
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
@@ -68,6 +62,11 @@ class Customer extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     public function statementPdfs(): HasMany

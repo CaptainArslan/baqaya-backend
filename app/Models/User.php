@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens;
+    use HasFactory;
+    use HasPublicId;
+    use Notifiable;
+    use SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -34,18 +39,9 @@ class User extends Authenticatable
         ];
     }
 
-    protected static function booted(): void
+    public function shop(): HasOne
     {
-        static::creating(function (self $user): void {
-            if (empty($user->uuid)) {
-                $user->uuid = (string) Str::uuid();
-            }
-        });
-    }
-
-    public function shops(): HasMany
-    {
-        return $this->hasMany(Shop::class);
+        return $this->hasOne(Shop::class);
     }
 
     public function devices(): HasMany
