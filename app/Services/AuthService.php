@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Exceptions\ApiException;
+use App\Support\PakistanPhone;
 use App\Models\OtpCode;
 use App\Models\RefreshToken;
 use App\Models\User;
@@ -20,17 +21,20 @@ class AuthService
 
     private const OTP_TTL_MINUTES = 10;
 
+    private const OTP_MAX_ATTEMPTS = 5;
+
     private const REFRESH_TTL_DAYS = 30;
 
     public function requestOtp(string $phone): void
     {
+        $this->assertValidPhone($phone);
+
         $code = $this->generateOtpCode();
 
-        OtpCode::query()->where('phone', $phone)
-            // ->whereNull('used_at')
-            ->delete();
-
-        Log::info('code: '.$code);
+        // Invalidate any prior pending OTPs for this phone so only the latest
+        // code is acceptable. SoftDeletes is not used on OtpCode — hard delete
+        // is fine here.
+        OtpCode::query()->where('phone', $phone)->delete();
 
         OtpCode::query()->create([
             'phone' => $phone,
@@ -38,8 +42,10 @@ class AuthService
             'expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
         ]);
 
+        // NEVER log the OTP outside dev/test environments — doing so leaks
+        // the second factor to anyone with log access.
         if (app()->environment(['local', 'testing'])) {
-            logger()->info('OTP for '.$phone.': '.$code);
+            Log::info('OTP for '.$phone.': '.$code);
         }
     }
 
@@ -54,12 +60,25 @@ class AuthService
         ?string $platform = null,
         ?string $fcmToken = null,
     ): array {
+        $this->assertValidPhone($phone);
+
         $otp = OtpCode::query()
             ->where('phone', $phone)
             ->whereNull('used_at')
             ->where('expires_at', '>', now())
             ->latest()
             ->first();
+
+        // Burn the OTP if too many wrong attempts already — prevents an
+        // attacker from brute-forcing the 6-digit code within the TTL window.
+        if ($otp !== null && $otp->attempts >= self::OTP_MAX_ATTEMPTS) {
+            $otp->update(['used_at' => now()]);
+            throw new ApiException(
+                'Too many invalid OTP attempts. Request a new code.',
+                'OTP_ATTEMPTS_EXCEEDED',
+                Response::HTTP_TOO_MANY_REQUESTS,
+            );
+        }
 
         if ($otp === null || ! Hash::check($code, $otp->code_hash)) {
             if ($otp !== null) {
@@ -181,6 +200,17 @@ class AuthService
         $max = (10 ** $length) - 1;
 
         return str_pad((string) random_int(0, $max), $length, '0', STR_PAD_LEFT);
+    }
+
+    private function assertValidPhone(string $phone): void
+    {
+        if (! PakistanPhone::isValid($phone)) {
+            throw new ApiException(
+                'Phone must be a valid Pakistani mobile number (923XXXXXXXXX).',
+                'INVALID_PHONE',
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
     }
 
     private function createRefreshToken(User $user, UserDevice $device, ?RefreshToken $replaced = null): string

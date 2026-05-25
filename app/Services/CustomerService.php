@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\AuditActionType;
 use App\Exceptions\ApiException;
+use App\Support\PakistanPhone;
 use App\Models\Customer;
 use App\Models\Shop;
 use App\Models\User;
@@ -35,12 +36,13 @@ class CustomerService
     public function create(Shop $shop, User $user, array $data, bool $syncOrigin = false): Customer
     {
         $this->assertUniqueName($shop, $data['name']);
-        $this->assertUniquePhone($shop, $data['phone'] ?? null);
+        $phone = $data['phone'] ?? null;
+        $this->assertUniquePhone($shop, $phone);
 
         $customer = Customer::query()->create([
             'shop_id' => $shop->id,
             'name' => $data['name'],
-            'phone' => $data['phone'] ?? null,
+            'phone' => $phone,
             'address' => $data['address'] ?? null,
             'opening_balance' => $data['opening_balance'] ?? 0,
             'current_balance' => $data['opening_balance'] ?? 0,
@@ -142,6 +144,14 @@ class CustomerService
         return $customer;
     }
 
+    public function findByPhone(Shop $shop, string $phone): ?Customer
+    {
+        return Customer::query()
+            ->where('shop_id', $shop->id)
+            ->where('phone', $phone)
+            ->first();
+    }
+
     private function query(Shop $shop, ?string $search): Builder
     {
         $query = Customer::query()->where('shop_id', $shop->id);
@@ -173,11 +183,28 @@ class CustomerService
         }
     }
 
+    private function assertValidPhone(?string $phone): void
+    {
+        if ($phone === null || $phone === '') {
+            return;
+        }
+
+        if (! PakistanPhone::isValid($phone)) {
+            throw new ApiException(
+                'Phone must be a valid Pakistani mobile number (923XXXXXXXXX).',
+                'INVALID_PHONE',
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
+    }
+
     private function assertUniquePhone(Shop $shop, ?string $phone, ?int $exceptId = null): void
     {
         if ($phone === null || $phone === '') {
             return;
         }
+
+        $this->assertValidPhone($phone);
 
         $exists = Customer::query()
             ->where('shop_id', $shop->id)

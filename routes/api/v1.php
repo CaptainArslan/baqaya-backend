@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CashbookController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ReminderController;
+use App\Http\Controllers\Api\V1\ReportsController;
 use App\Http\Controllers\Api\V1\ShopController;
 use App\Http\Controllers\Api\V1\StatementController;
 use App\Http\Controllers\Api\V1\SyncController;
@@ -38,7 +40,9 @@ Route::prefix('v1')->group(function (): void {
             Route::get('customers', [CustomerController::class, 'index']);
             Route::post('customers', [CustomerController::class, 'store']);
             Route::post('customers/bulk', [CustomerController::class, 'bulkStore']);
+            Route::post('customers/match', [CustomerController::class, 'match']);
             Route::get('customers/{uuid}', [CustomerController::class, 'show']);
+            Route::get('customers/{uuid}/ledger', [CustomerController::class, 'ledger']);
             Route::patch('customers/{uuid}', [CustomerController::class, 'update']);
             Route::delete('customers/{uuid}', [CustomerController::class, 'destroy']);
             Route::post('customers/{uuid}/statement', [StatementController::class, 'generate']);
@@ -65,6 +69,11 @@ Route::prefix('v1')->group(function (): void {
             Route::post('reminders/send', [ReminderController::class, 'send']);
 
             Route::get('statements/{uuid}/download', [StatementController::class, 'download']);
+
+            Route::get('cashbook/summary', [CashbookController::class, 'summary']);
+            Route::get('cashbook/entries', [CashbookController::class, 'entries']);
+
+            Route::get('reports/dashboard', [ReportsController::class, 'dashboard']);
         });
     });
 });

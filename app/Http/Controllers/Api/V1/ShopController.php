@@ -9,6 +9,7 @@ use App\Http\Resources\ShopResource;
 use App\Models\Shop;
 use App\Services\ShopService;
 use App\Support\ApiResponse;
+use App\Support\PakistanPhone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,7 @@ class ShopController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'business_type' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => PakistanPhone::optionalRules(),
             'address' => ['nullable', 'string'],
             'currency' => ['nullable', 'string', 'max:10'],
             'timezone' => ['nullable', 'string', 'max:50'],
@@ -49,7 +50,7 @@ class ShopController extends Controller
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'business_type' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => PakistanPhone::optionalRules(),
             'address' => ['nullable', 'string'],
             'currency' => ['nullable', 'string', 'max:10'],
             'timezone' => ['nullable', 'string', 'max:50'],

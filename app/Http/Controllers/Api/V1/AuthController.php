@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use App\Support\ApiResponse;
+use App\Support\PakistanPhone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,7 +22,7 @@ class AuthController extends Controller
     public function requestOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => PakistanPhone::requiredRules(),
         ]);
 
         $key = 'otp:'.$validated['phone'];
@@ -40,7 +41,7 @@ class AuthController extends Controller
     public function verifyOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => PakistanPhone::requiredRules(),
             'code' => ['required', 'string', 'digits:'.$this->authService->otpLength()],
             'device_id' => ['required', 'string', 'max:255'],
             'device_name' => ['nullable', 'string', 'max:255'],

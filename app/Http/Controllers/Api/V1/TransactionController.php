@@ -43,7 +43,12 @@ class TransactionController extends Controller
 
         return ApiResponse::success(
             TransactionResource::collection($transactions),
-            meta: ['total' => $transactions->total()],
+            meta: [
+                'current_page' => $transactions->currentPage(),
+                'last_page' => $transactions->lastPage(),
+                'per_page' => $transactions->perPage(),
+                'total' => $transactions->total(),
+            ],
         );
     }
 

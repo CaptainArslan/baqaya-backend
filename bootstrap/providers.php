@@ -1,9 +1,7 @@
 <?php
 
-use App\Providers\AppServiceProvider;
-use App\Providers\SwaggerServiceProvider;
-
 return [
-    AppServiceProvider::class,
-    SwaggerServiceProvider::class,
+    App\Providers\AppServiceProvider::class,
+    App\Providers\SwaggerServiceProvider::class,
+    App\Providers\TelescopeServiceProvider::class,
 ];

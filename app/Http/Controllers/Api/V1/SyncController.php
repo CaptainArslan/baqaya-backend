@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CustomerResource;
 use App\Http\Resources\PaymentResource;
+use App\Http\Resources\ReminderResource;
 use App\Http\Resources\TransactionResource;
+use App\Models\SyncRequest;
 use App\Models\Shop;
 use App\Models\UserDevice;
 use App\Services\SyncService;
@@ -78,7 +80,7 @@ class SyncController extends Controller
             'customers' => CustomerResource::collection($data['customers']),
             'transactions' => TransactionResource::collection($data['transactions']),
             'payments' => PaymentResource::collection($data['payments']),
-            'reminders' => $data['reminders'],
+            'reminders' => ReminderResource::collection(collect($data['reminders'])),
         ]);
     }
 }

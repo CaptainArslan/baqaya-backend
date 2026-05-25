@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ReminderStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ReminderResource;
 use App\Jobs\SendWhatsAppReminder;
 use App\Models\Reminder;
 use App\Models\Shop;
@@ -32,9 +33,11 @@ class ReminderController extends Controller
             ->paginate((int) $request->query('per_page', 20));
 
         return ApiResponse::success(
-            $reminders->items(),
+            ReminderResource::collection($reminders),
             meta: [
                 'current_page' => $reminders->currentPage(),
+                'last_page' => $reminders->lastPage(),
+                'per_page' => $reminders->perPage(),
                 'total' => $reminders->total(),
             ],
         );
@@ -62,11 +65,10 @@ class ReminderController extends Controller
 
         SendWhatsAppReminder::dispatch($reminder->id);
 
-        return ApiResponse::success([
-            'uuid' => $reminder->uuid,
-            'status' => $reminder->status instanceof ReminderStatus
-                ? $reminder->status->value
-                : (string) $reminder->status,
-        ], 'Reminder queued.', 202);
+        return ApiResponse::success(
+            new ReminderResource($reminder->load('customer')),
+            'Reminder queued.',
+            202,
+        );
     }
 }

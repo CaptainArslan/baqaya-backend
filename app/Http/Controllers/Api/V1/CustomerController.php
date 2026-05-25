@@ -6,9 +6,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CustomerResource;
+use App\Http\Resources\LedgerEntryResource;
+use App\Models\LedgerEntry;
 use App\Models\Shop;
 use App\Services\CustomerService;
 use App\Support\ApiResponse;
+use App\Support\PakistanPhone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,7 +50,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => PakistanPhone::optionalRules(),
             'address' => ['nullable', 'string'],
             'opening_balance' => ['nullable', 'numeric'],
             'notes' => ['nullable', 'string'],
@@ -66,7 +69,7 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'customers' => ['required', 'array', 'min:1'],
             'customers.*.name' => ['required', 'string', 'max:255'],
-            'customers.*.phone' => ['nullable', 'string', 'max:20'],
+            'customers.*.phone' => PakistanPhone::optionalRules(),
             'customers.*.address' => ['nullable', 'string'],
             'customers.*.opening_balance' => ['nullable', 'numeric'],
         ]);
@@ -93,7 +96,7 @@ class CustomerController extends Controller
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => PakistanPhone::optionalRules(),
             'address' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
@@ -121,5 +124,51 @@ class CustomerController extends Controller
         );
 
         return ApiResponse::success(message: 'Customer deleted.');
+    }
+
+    public function ledger(Request $request, string $uuid): JsonResponse
+    {
+        /** @var Shop $shop */
+        $shop = $request->attributes->get('shop');
+        $customer = $this->customerService->findByUuid($shop, $uuid);
+
+        $entries = LedgerEntry::query()
+            ->with('customer')
+            ->where('shop_id', $shop->id)
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('created_at')
+            ->paginate((int) $request->query('per_page', 50));
+
+        return ApiResponse::success(
+            LedgerEntryResource::collection($entries),
+            meta: [
+                'current_page' => $entries->currentPage(),
+                'last_page' => $entries->lastPage(),
+                'per_page' => $entries->perPage(),
+                'total' => $entries->total(),
+            ],
+        );
+    }
+
+    public function match(Request $request): JsonResponse
+    {
+        /** @var Shop $shop */
+        $shop = $request->attributes->get('shop');
+
+        $validated = $request->validate([
+            'phones' => ['required', 'array', 'min:1'],
+            'phones.*' => PakistanPhone::requiredRules(),
+        ]);
+
+        $results = [];
+        foreach ($validated['phones'] as $phone) {
+            $customer = $this->customerService->findByPhone($shop, $phone);
+            $results[] = [
+                'phone' => $phone,
+                'customer_uuid' => $customer?->uuid,
+            ];
+        }
+
+        return ApiResponse::success($results);
     }
 }

@@ -43,7 +43,12 @@ class PaymentController extends Controller
 
         return ApiResponse::success(
             PaymentResource::collection($payments),
-            meta: ['total' => $payments->total()],
+            meta: [
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+                'per_page' => $payments->perPage(),
+                'total' => $payments->total(),
+            ],
         );
     }
 
